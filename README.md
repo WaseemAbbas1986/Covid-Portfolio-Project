@@ -22,85 +22,147 @@
 - Data Source use in this project excel sheets of covid 19 data from github website. here is data source link
 https://ourworldindata.org/covid-deaths
 
-## covid 19 Data analysis
+### Microsoft SQL Data Analysis
 - Percenatge of total deaths against total cases
-``SQL
-select sum(total_deaths) / SUM(total_cases)* 100 as percentage from CovidDeaths
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-# Car sales Report
-
+```sql
+select location, date, total_deaths, total_cases,
+(total_deaths / total_cases)*100  as death_percentage
+from CovidDeaths
+where continent is not null
+order by 1,2
+```
 ---
-### Project Overview
-in this project we are focusing on
-- Sales Overview
-- Average Price Analysis
-- Car Sold Matrix
-
-
+- Total cases vs population
+```sql
+select location, date, population, total_cases,
+(total_cases / population)*100  as total_cases_percentage
+from CovidDeaths
+where continent is not null
+order by 1,2
+```
 ---
-### Problem Statement
-
-- KPIs requirement
-  - YTD Total Sales
-  - MTD Total Sales
-  - YoY growth in Total Sales
-  - Diffrence between YTD sales and previous year-to-date (PYTD) Sales
-- Average Price Analysis
-  - YTD Average Price
-  - MTD Average Price
-  - YoY Growth in average price
-  - Diffrence between YTD average price and PYTD average price
-- Cars Sold Matrix
-  - YTD Car Sold
-  - MTD Car Sold
-  - YoY Growth in car sold
-  - Diffrence between YTD Car Sold and PYTD Car Sold 
-- Charts Requirements
-  - YTD sales Weekly Trend: Display a line chart illustrating the weekly trand of YTD sales. the X-Axis should represnt weeks and y-Axis should show the total sales amount
-  - YTD Total Sales By Body Style: Visualize the distribution of YTD Total sales across diffrent car body style using a pie chart
-  - YTD Total Sales By Color: Present the distribution of various car colors to the YTD Total sales through a pie chart
-  - YTD Car Sold by dealer region: Show case YTD sales data based on diffrent dealer regions using a map chart to vusualize sales distribution geographicaly
-  - Comopnay wise sales trand in Grid form: Provide a tabular grid that display the sales trand of each company. The grid should showcase the company name along with YTD Sales figure
-  - details Grid showing all cars sales information : Create a detail Grid that present all relevent information for each car sale, including car model, body style, color, sales amount, dealer region, date etc
-  - create and grod view dashboard displaying a table of all car details in power BI. This should allow a user to export the grid of varius filter applied
-
- ---
-### About Data and Data Source 
-In this report we have used "Car sales.csv" file. which contains 24000 rows and 16 columns
-![Car sales](https://github.com/WaseemAbbas1986/Car-sales-Report-PowerBI/assets/168902203/6fea0c58-8460-4c80-88e7-27ec21cd0ae5)
-
-
+- Which country has highest infection rate compare to population
+```sql
+select location,  population,max(total_cases) as max_cases,
+max((total_cases / population)) *100 as percentage
+from CovidDeaths
+where continent is not null
+group by location, population
+order by percentage desc
+```
 ---
-### Tools
-- MS Excel - Data Source
-- Power BI - Creating Report and Dashboard
-
-
+- Countries with highest death count per population
+```sql
+select location,max(total_deaths) as max_deaths
+from CovidDeaths
+where continent is not null
+group by location
+order by max_deaths desc
+```
 ---
-### car sales report with all relevent KPI and Charts
 
-![Car Sales Dashboard](https://github.com/WaseemAbbas1986/Car-sales-Report-PowerBI/assets/168902203/12c316d4-657b-407c-80ec-4ffea6bcb14d)
+- Death Count by continent
+```sql
+select continent,  max(total_deaths) as Totaldeathcount
+from CovidDeaths
+where continent is not null
+group by  continent
+order by Totaldeathcount desc
+```
+---  
+- Continent with highest death count per population
+```sql
+Select continent,
+max(total_deaths) as TotalDeaths
+from CovidDeaths
+where continent is not null
+group by continent
+order by TotalDeaths desc
+```
+---
+- Global Numbers by Date
+```sql
+select date, sum(new_cases) as new_Cases,
+SUM(new_deaths) as newdeaths, sum(new_deaths)/ 
+sum(new_cases)* 100 as deathrate 
+from CovidDeaths
+where continent is not null
+group by date
+order by newdeaths desc
+```
+---
+- Running Total of new vaccination by location
+```sql
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+sum(vac.new_vaccinations) over (partition by dea.location order by dea.location, dea.date)
+as Running_Total
+from CovidDeaths dea
+join CovidVaccinations vac
+on dea.location = vac.location
+and dea.date = vac.date
+where dea.continent is not null and vac.new_vaccinations is not null
+order by 1,2,3
+```
+---
+- Use CTE for vaccination percentage with running total
+```sql
+with ctetable (continent, location, date, population, new_vaccinations, running_total)
+as
+(
+with ctetable (continent, location, date, population, new_vaccinations, running_total)
+as
+(
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+sum(vac.new_vaccinations) over (partition by dea.location order by dea.location, dea.date)
+as Running_Total
+from CovidDeaths dea
+join CovidVaccinations vac
+on dea.location = vac.location
+and dea.date = vac.date
+where dea.continent is not null and
+vac.new_vaccinations is not null
+--order by 1,2,3
+)
+select *, (running_total / population) *100 as percentage
+from ctetable
+```
+---
+- use Temp Table for analysis
+```sql
+drop table if exists #percentagepopulationvaccinated
+create table #percentagepopulationvaccinated
+(continent varchar(255),
+location varchar(255),
+date datetime,
+population numeric,
+new_vaccinations numeric,
+running_total numeric
+)
+insert into #percentagepopulationvaccinated
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+sum(vac.new_vaccinations) over (partition by dea.location order by dea.location, dea.date)
+as Running_Total
+from CovidDeaths dea
+join CovidVaccinations vac
+on dea.location = vac.location
+and dea.date = vac.date
+--where dea.continent is not null and
+--vac.new_vaccinations is not null
+--order by 1,2,3
 
- 
- ---
- ### Car sales with all details
-
- ![Car Sales Details](https://github.com/WaseemAbbas1986/Car-sales-Report-PowerBI/assets/168902203/d97241ee-175f-4faa-a3d5-faab61699610)
-
-
-
+select *, (running_total / population) *100
+from #percentagepopulationvaccinated
+```
+---
+- Create view for data visualization in tableau
+```sql
+create view percentagepopulationvaccinated as 
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+sum(vac.new_vaccinations) over (partition by dea.location order by dea.location, dea.date)
+as Running_Total
+from CovidDeaths dea
+join CovidVaccinations vac
+on dea.location = vac.location
+and dea.date = vac.date
+```
+---
