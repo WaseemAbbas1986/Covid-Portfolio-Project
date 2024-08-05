@@ -1,4 +1,4 @@
-# Covid Portfolio Project
+# Covid Portfolio Project (SQL and Power BI)
 ## Project Overview
 - in this project we will analyse data of covid 19 pendamic in SQL Server. analyse total cases vs deaths and total vaccination
 
